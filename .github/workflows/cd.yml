@@ -39,7 +39,7 @@ jobs:
     needs: [shellcheck]
     strategy:
       matrix:
-        dist: [bullseye, trixie]
+        dist: [trixie]
         arch: [amd64, arm64]
     name: Build ${{ matrix.dist }} on ${{ matrix.arch }}
     steps:
@@ -78,4 +78,4 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_REGISTRY: docker.io
         run: |
-          DISTS="bullseye trixie latest" bash pushmanifest
+          DISTS="trixie latest" bash pushmanifest
