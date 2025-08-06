@@ -5,11 +5,11 @@ set -u
 set -o pipefail
 
 DISTS=${DISTS:-"bullseye
-bookworm
+trixie
 latest
 "}
 
-BASENAME=bitnami/minideb
+BASENAME=key2p/minideb
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-"docker.io"}
 PLATFORMS=${PLATFORMS:-amd64 arm64}
 DRY_RUN=${DRY_RUN:-}

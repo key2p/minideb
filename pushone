@@ -7,7 +7,7 @@ set -o pipefail
 DIST=${1:?Specify the distrubution name}
 PLATFORM=${2:-amd64}
 
-BASENAME=bitnami/minideb
+BASENAME=key2p/minideb
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-"docker.io"}
 
 if [ -n "${DOCKER_PASSWORD:-}" ]; then

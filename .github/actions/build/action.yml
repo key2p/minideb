@@ -1,10 +1,10 @@
 inputs:
   dist:
-    description: 'Dist to build'
-    default: 'bookworm'
+    description: "Dist to build"
+    default: "bullseye"
   platform:
-    description: 'Platform to build'
-    default: 'amd64'
+    description: "Platform to build"
+    default: "amd64"
   is_latest:
     description: The created dist is also latest
     default: false

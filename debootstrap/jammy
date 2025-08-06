@@ -2,7 +2,7 @@ mirror_style release
 download_style apt
 finddebs_style from-indices
 variants - container fakechroot
-keyring /usr/share/keyrings/debian-archive-keyring.gpg
+keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 if doing_variant fakechroot; then
 	test "$FAKECHROOT" = "true" || error 1 FAKECHROOTREQ "This variant requires fakechroot environment to be started"
@@ -25,7 +25,7 @@ work_out_debs () {
     #    https://github.com/bitnami/minideb/issues/16
     # coreutils for many very common utilities
     # dash for a shell for scripts
-    # debian-archive-keyring to verify apt packages
+    # ubuntu-keyring to verify apt packages
     # diffutils for diff as required for installing the system
     #  (could maybe be removed after, but diffing is pretty common in debugging)
     # dpkg for dpkg
@@ -46,7 +46,7 @@ work_out_debs () {
     # tzdata for handling timezones
     # util-linux for getopt
     # mount is required for mounting /proc during debootstrap
-	required="adduser base-files base-passwd bash bsdutils coreutils dash debian-archive-keyring diffutils dpkg findutils grep gzip hostname init-system-helpers libc-bin login lsb-base mawk ncurses-base passwd sed sysv-rc tar tzdata util-linux mount e2fsprogs util-linux-extra"
+	required="adduser base-files base-passwd bash bsdutils coreutils dash ubuntu-keyring diffutils dpkg findutils grep gzip hostname init-system-helpers libc-bin login lsb-base mawk ncurses-base passwd sed sysv-rc tar tzdata util-linux mount"
 
 	base="apt"
 
