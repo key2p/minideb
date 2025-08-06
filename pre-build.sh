@@ -10,5 +10,5 @@ if [[ ! -f /etc/debian_version ]]; then
 fi
 
 apt-get update
-apt-get install -y debootstrap debian-archive-keyring jq dpkg-dev gnupg apt-transport-https ca-certificates curl gpg
+apt-get install -y debootstrap debian-archive-keyring jq dpkg-dev gnupg apt-transport-https ca-certificates curl gpg perl
 
