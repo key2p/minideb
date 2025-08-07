@@ -33,7 +33,7 @@ set -e
 set -u
 set -o pipefail
 
-BASENAME=key2p/minideb
+BASENAME=key2p/debian
 
 mkdir -p build
 
@@ -45,6 +45,14 @@ build() {
     DIST=$1
     PLATFORM=${2:-amd64}
     TAG=$DIST-$PLATFORM
+
+     if [ "$DIST" == "13" ]; then
+        DIST='trixie'
+     elif [ "$DIST" == "12" ]; then
+        DIST='bookworm'
+     elif [ "$DIST" == "11" ]; then
+        DIST='bullseye'
+     fi
 
     [ -f "debootstrap/$DIST" ] || (echo "buildall: Unknown distribution: $DIST" && exit 1)
     current_ts="$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)"

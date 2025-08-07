@@ -8,7 +8,7 @@ set -o pipefail
 
 arch=${1:-"amd64 arm64"}
 
-dist="trixie
+dist="13
 "
 for a in $arch; do
   for i in $dist; do

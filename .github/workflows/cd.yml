@@ -13,8 +13,8 @@ on:
 # Remove all permissions by default
 permissions: {}
 env:
-  BASENAME: key2p/minideb
-  LATEST: trixie
+  BASENAME: key2p/debian
+  LATEST: "13"
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -39,7 +39,7 @@ jobs:
     needs: [shellcheck]
     strategy:
       matrix:
-        dist: [trixie]
+        dist: ["13"]
         arch: [amd64, arm64]
     name: Build ${{ matrix.dist }} on ${{ matrix.arch }}
     steps:
@@ -81,4 +81,4 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_REGISTRY: docker.io
         run: |
-          DISTS="trixie latest" bash pushmanifest
+          DISTS="13 latest" bash pushmanifest

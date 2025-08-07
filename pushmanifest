@@ -4,11 +4,11 @@ set -e
 set -u
 set -o pipefail
 
-DISTS=${DISTS:-"trixie
+DISTS=${DISTS:-"13
 latest
 "}
 
-BASENAME=key2p/minideb
+BASENAME=key2p/debian
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-"docker.io"}
 PLATFORMS=${PLATFORMS:-amd64 arm64}
 DRY_RUN=${DRY_RUN:-}

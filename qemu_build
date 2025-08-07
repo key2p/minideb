@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-BASENAME=key2p/minideb
+BASENAME=key2p/debian
 pub_key_dir="$(mktemp -d)"
 
 do_ssh() {

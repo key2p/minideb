@@ -4,10 +4,10 @@ set -e
 set -u
 set -o pipefail
 
-DISTS="trixie
+DISTS="13
 "
-LATEST=trixie
-BASENAME=key2p/minideb
+LATEST="13"
+BASENAME=key2p/debian
 
 if [ -n "${DOCKER_PASSWORD:-}" ]; then
     docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
