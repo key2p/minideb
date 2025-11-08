@@ -129,9 +129,13 @@ main() {
     log_info "Step 4: Updating packages and installing tools inside chroot..."
     # We run all commands in a single chroot shell session for efficiency
     # --no-cache is used to avoid filling the rootfs with unnecessary cache files
+    # cloud-utils-growpart e2fsprogs-extra for install growpart and mkfs.ext4
+    # iptables busybox-openrc busybox-mdev-openrc for podman
+    # dropbear for ssh maybe
     chroot "$chroot_dir" /bin/sh -c "date; ln -s /etc/ssl /usr/lib/ssl; apk --no-check-certificate update && \
         apk --no-check-certificate upgrade && \
-        apk add -v --no-check-certificate cloud-utils-growpart e2fsprogs-extra && \
+        apk add -v --no-check-certificate cloud-utils-growpart e2fsprogs-extra iptables busybox-openrc busybox-mdev-openrc dropbear dropbear-ssh && \
+        rc-update add cgroups && \
         rm -rf /var/cache/apk/*" || {
         log_error "Failed to run commands inside chroot. Check network or package errors."
         exit 1
