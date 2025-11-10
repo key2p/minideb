@@ -9,11 +9,11 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
   schedule:
-    - cron: "10 0 14 * *"
+    - cron: "50 4 * * 4"
 
 jobs:
   Build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -22,11 +22,13 @@ jobs:
         id: build
         run: |
           set -ex
-          cd $GITHUB_WORKSPACE
-          sudo -E apt-get install -y curl tar gzip xz-utils dpkg parted fdisk util-linux dosfstools e2fsprogs xorriso grub-pc-bin grub-efi-amd64-bin
+          cd $GITHUB_WORKSPACE && mkdir -p /dev/shm/cache/dist || true
+          sudo -E apt update -y
+          sudo -E apt-get install -y curl tar gzip xz-utils dpkg parted fdisk util-linux dosfstools e2fsprogs xorriso grub-pc-bin grub-efi-amd64-bin mtools upx
           sudo -E bash $GITHUB_WORKSPACE/scripts/build_alpine_rootfs.sh
           sudo -E bash $GITHUB_WORKSPACE/scripts/build.sh all
-          cp -f /dev/shm/alpine-part-rootfs.tar.gz /dev/shm/cache/dist
+          sudo -E chmod -R 0777 /dev/shm/cache/dist
+          ls -al /dev/shm/cache/dist && cp -f /dev/shm/alpine-part-rootfs.tar.gz /dev/shm/cache/dist
           echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
           echo "ALPINE_VER=$(cat /dev/shm/alpine_version)" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
