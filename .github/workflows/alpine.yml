@@ -23,7 +23,10 @@ jobs:
         run: |
           set -ex
           cd $GITHUB_WORKSPACE
-          sudo -E bash $GITHUB_WORKSPACE/build_alpine_rootfs.sh
+          sudo -E apt-get install -y curl tar gzip xz-utils dpkg parted fdisk util-linux dosfstools e2fsprogs xorriso grub-pc-bin grub-efi-amd64-bin
+          sudo -E bash $GITHUB_WORKSPACE/scripts/build_alpine_rootfs.sh
+          sudo -E bash $GITHUB_WORKSPACE/scripts/build.sh all
+          cp -f /dev/shm/alpine-part-rootfs.tar.gz /dev/shm/cache/dist
           echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
           echo "ALPINE_VER=$(cat /dev/shm/alpine_version)" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
@@ -36,7 +39,7 @@ jobs:
           allowUpdates: true
           tag: alpine-rootfs
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: /dev/shm/alpine-part-rootfs.tar.gz
+          artifacts: /dev/shm/cache/dist/*
           body: |
             **This is alpine mini rootfs for  ${{ env.ALPINE_VER }}**
             ### 📒 固件信息(x86_64版本)

@@ -1,0 +1,64 @@
+#!/bin/sh
+
+check_installed() { 
+    BOOT_PART=$(do_find_label_part "ZPOD_BOOT" "")
+    ROOT_PART=$(do_find_label_part "ZPOD_ROOT" "")
+
+    if [ -z "$BOOT_PART" ] || [ -z "$ROOT_PART" ]; then
+        return
+    fi
+
+    echo "$BOOT_PART"
+}
+
+boot_install() {
+    BOOT_INSTALLED=$(check_installed)
+    if [ -n "$BOOT_INSTALLED" ]; then
+        log_info "Zpod maybe installed at $BOOT_INSTALLED. DO YOU INSTALL AGAIN?";
+        read -p "Confirm ReInstall, ALL data CLEAR!!! (y/n)" -t 6 confirm_reinstall
+
+        if [ "$confirm_reinstall" != "y" ]; then
+            # 不重装系统
+            log_info "Zpod will NOT reinstall";
+
+            read -p "Wan To Update?(y/n)" -t 6 confirm_update
+            if [ "$confirm_update" != "n" ]; then
+                # 默认执行升级(简单的替换两个文件就可以)
+                mount "$BOOT_INSTALLED" /mnt/boot && cp -f /mnt/boot_from/boot/zpod* /mnt/boot/boot/ && umount /mnt/boot
+                log_info "Zpod updated.";
+            fi
+
+            log_info "Zpod install finished. rebooting...";
+            return
+        fi
+    fi
+
+    ROOT_DISK=$(fdisk -l | grep "^Disk" | grep /dev | grep -v -E "(loop|mapp|sr)" | awk '{print $2}' | cut -d : -f 1 | head -n 1)
+
+    # --- 检查结果并继续 ---
+    if [ -z "$BOOT_DEVICE" ]; then
+        log_error "FATAL: Could not find ZPOD_INSTALL (ISO) or ZPOD_BOOT (Disk) partition."
+        log_error "Halting. Dropping to a shell."
+        exec /bin/sh # 启动失败，进入调试 shell
+    fi
+
+    log_info "Booted from ${BOOT_DEVICE} in ${BOOT_MODE} mode. install to ${ROOT_DISK}"
+
+    # 从 disk.img.gz dd 到物理硬盘
+    do_backup_src "${BOOT_DEVICE}" "${ROOT_DISK}"
+
+    [ -e /mnt/boot_from/boot/disk.img.gz ] && (gunzip -dc /mnt/boot_from/boot/disk.img.gz | dd of="$ROOT_DISK") &&  touch /tmp/ddok
+    [ -e /mnt/boot_from/boot/disk.img.xz ] && (unxz   -dc /mnt/boot_from/boot/disk.img.xz | dd of="$ROOT_DISK") &&  touch /tmp/ddok
+
+    # 挂载分区, 复制文件等
+    [ -e /tmp/ddok ]   && do_install_and_reboot "$ROOT_DISK"
+}
+
+load_mod sr_mod cdrom nvme_core nvme ahci ext4 xfs
+/sbin/mdev -s
+
+# 启动网络, syslogd
+do_start_network
+do_find_boot_part
+do_init_hostname
+boot_install
