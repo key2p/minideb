@@ -15,14 +15,59 @@ fi
 
 # --- Configuration ---
 KERNEL_URL="https://github.com/key2p/IPQ/releases/download/6.17_cloud/linux-image-6.17.7-x64v3-xanmod1_6.17.7-2_amd64.deb"
+ABI="v3"
+
+BUILD_TARGET="all"
+
+# Check command line arguments
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 [-k kernel_deb_url] [-a abi] [--all|--gz|--iso]"
+    echo "  all: Build both gz and iso (default)"
+    echo "  gz: Build only zpod.tar.gz"
+    echo "  iso: Build only zpod.iso"
+    exit 1
+fi
+
+while [[ $# -ge 1 ]]; do
+    case $1 in
+    -a|--abi)
+        shift
+        ABI="$1"
+        shift
+        ;;
+    -k|--kernel)
+        shift
+        KERNEL_URL="$1"
+        shift
+        ;;
+    --iso)
+        BUILD_TARGET="iso"
+        shift
+        ;;
+    --gz)
+        BUILD_TARGET="gz"
+        shift
+        ;;
+    --all)
+        BUILD_TARGET="all"
+        shift
+        ;;
+    *)
+      echo "Unknown option: "
+      exit 1;
+        ;;
+    esac
+done
+
 PODMAN_URL="https://github.com/mgoltzsche/podman-static/releases/latest/download/podman-linux-amd64.tar.gz"
 ALPINE_ROOTFS_URL="https://github.com/key2p/minideb/releases/download/alpine-rootfs/alpine-part-rootfs.tar.gz"
 
 # now not used. crun instead
-YOUKI_URL="https://github.com/youki-dev/youki/releases/latest/download/youki-0.5.7-x86_64-musl.tar.gz"
+#YOUKI_URL="https://github.com/youki-dev/youki/releases/latest/download/youki-0.5.7-x86_64-musl.tar.gz"
 
-KERNEL_PATH="/dev/shm/kernel6.17.deb"
+KERNEL_PATH="/dev/shm/kernel${ABI}.deb"
 PODMAN_PATH="/dev/shm/podman-linux-amd64.tar.gz"
+
 YOUKI_PATH="/dev/shm/youki-musl.tar.gz"
 ALPINE_PATH="/dev/shm/alpine-part-rootfs.tar.gz"
 DISKIMG_PATH="/dev/shm/disk.img.gz"
@@ -31,6 +76,7 @@ DISKIMG_PATH="/dev/shm/disk.img.gz"
 WORKDIR="/dev/shm/cache/build_zpod"
 # Final output directory
 OUTPUT_DIR="/dev/shm/cache/dist"
+PODMAN_CACHE="/dev/shm/podman_cache"
 
 # --- Logging function ---
 C_RESET='\033[0m'
@@ -136,30 +182,34 @@ download_podman_static() {
     log_info "Downloading Podman static binary..."
     [ ! -e "${PODMAN_PATH}" ] && curl -L -o "${PODMAN_PATH}" "$PODMAN_URL"
 
-    # Extract directly into the 'os' directory which will be copied to /boot/os
-    tar -xzf "${PODMAN_PATH}" -C "${WORKDIR}/initrd" --strip-components=1
+    if [ ! -d "${PODMAN_CACHE}" ]; then
+        mkdir -p "${PODMAN_CACHE}" || true
+        # Extract directly into the 'os' directory which will be copied to /boot/os
+        tar -xzf "${PODMAN_PATH}" -C "${PODMAN_CACHE}" --strip-components=1
+
+        # reduce size
+        strip "${PODMAN_CACHE}/usr/local/bin/podman"
+        strip "${PODMAN_CACHE}/usr/local/bin/crun"
+        strip "${PODMAN_CACHE}/usr/local/lib/podman/netavark"
+
+        time upx -q --best --lzma "${PODMAN_CACHE}/usr/local/bin/podman"
+        time upx -q --best --lzma "${PODMAN_CACHE}/usr/local/lib/podman/netavark"
+        time upx -q --best --lzma "${PODMAN_CACHE}/usr/local/lib/podman/aardvark-dns"
+        time upx -q --best --lzma "${PODMAN_CACHE}/usr/local/lib/podman/rootlessport"
+        time upx -q --best --lzma "${PODMAN_CACHE}/usr/local/lib/podman/conmon"
+
+        
+        # 默认使用 crun, 当youki 足够稳定再切换到 youki
+        #[ ! -e "${YOUKI_PATH}" ] && curl -L -o "${YOUKI_PATH}" "$YOUKI_URL"
+        #tar -xzf "${YOUKI_PATH}" -C "${PODMAN_CACHE}/usr/local/bin"
+    fi
+
+    cp -rf "${PODMAN_CACHE}"/* "${WORKDIR}/initrd/" || true
+    
     chmod +x "${WORKDIR}/initrd/usr/local/bin/"*
-
-    # reduce size
-    strip "${WORKDIR}/initrd/usr/local/bin/podman"
-    strip "${WORKDIR}/initrd/usr/local/bin/crun"
-    strip "${WORKDIR}/initrd/usr/local/lib/podman/netavark"
-
-    upx -q --best --lzma "${WORKDIR}/initrd/usr/local/bin/podman"
-    upx -q --best --lzma "${WORKDIR}/initrd/usr/local/lib/podman/netavark"
-    upx -q --best --lzma "${WORKDIR}/initrd/usr/local/lib/podman/aardvark-dns"
-    upx -q --best --lzma "${WORKDIR}/initrd/usr/local/lib/podman/rootlessport"
-    upx -q --best --lzma "${WORKDIR}/initrd/usr/local/lib/podman/conmon"
 
     rm -f "${WORKDIR}/initrd/usr/local/libexec/podman/quadlet"
     rm -f "${WORKDIR}/initrd/usr/local/bin/runc"
-    #upx "${WORKDIR}/initrd/usr/local/bin/runc"
-    #rm -f "${WORKDIR}/initrd/usr/local/bin/crun"
-    #upx "${WORKDIR}/initrd/usr/local/bin/crun"
-
-    # 默认使用 crun, 当youki 足够稳定再切换到 youki
-    #[ ! -e "${YOUKI_PATH}" ] && curl -L -o "${YOUKI_PATH}" "$YOUKI_URL"
-    #tar -xzf "${YOUKI_PATH}" -C "${WORKDIR}/initrd/usr/local/bin"
 
     mkdir -p "${WORKDIR}/initrd/licenses" || true
     mv "${WORKDIR}/initrd/usr/local/bin/LICENSE" "${WORKDIR}/initrd/licenses"  || true
@@ -329,15 +379,15 @@ EOF
     # --- Build zpod.tar.gz ---
     pushd "${WORKDIR}" > /dev/null
     if [ "$BUILD_TARGET" = "gz" ] ||  [ "$BUILD_TARGET" = "all" ]; then
-        log_info "Creating ${OUTPUT_DIR}/zpod.tar.gz..."
-        time tar -czf "${OUTPUT_DIR}/zpod.tar.gz" zpod-vmlinuz zpod-initrd disk.img.gz
+        log_info "Creating ${OUTPUT_DIR}/zpod${ABI}.tar.gz..."
+        time tar -czf "${OUTPUT_DIR}/zpod${ABI}.tar.gz" zpod-vmlinuz zpod-initrd disk.img.gz
     fi
 
     popd > /dev/null
 
     # --- Build zpod.iso ---
     if [ "$BUILD_TARGET" = "iso" ] ||  [ "$BUILD_TARGET" = "all" ]; then
-        log_info "Creating ${OUTPUT_DIR}/zpod.iso..."
+        log_info "Creating ${OUTPUT_DIR}/zpod${ABI}.iso..."
 
         # Prepare ISO contents
         cp "${WORKDIR}/zpod-vmlinuz" "${WORKDIR}/iso/boot/"
@@ -357,7 +407,7 @@ menuentry "Install ZPod OS" {
 EOF
 
         # Use grub-mkrescue which is a wrapper around xorriso for making bootable GRUB ISOs
-        time grub-mkrescue --compress=xz -o "${OUTPUT_DIR}/zpod.iso" "${WORKDIR}/iso" -- -volid "ZPOD_INSTALL"
+        time grub-mkrescue --compress=xz -o "${OUTPUT_DIR}/zpod${ABI}.iso" "${WORKDIR}/iso" -- -volid "ZPOD_INSTALL"
     fi
 
     log_info "All artifacts built successfully in ${OUTPUT_DIR}."
@@ -368,17 +418,6 @@ EOF
 
 # Register the cleanup function to run on script exit
 trap cleanup EXIT
-
-# Check command line arguments
-if [ $# -eq 0 ]; then
-    echo "Usage: $0 [all|gz|iso]"
-    echo "  all: Build both gz and iso (default)"
-    echo "  gz: Build only zpod.tar.gz"
-    echo "  iso: Build only zpod.iso"
-    exit 1
-fi
-
-BUILD_TARGET="$1"
 
 check_dependencies
 setup_environment
