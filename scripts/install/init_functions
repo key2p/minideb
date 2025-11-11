@@ -3,6 +3,7 @@
 export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin:/usr/local/bin"
 export BOOT_DEVICE=""
 export BOOT_MODE=""
+export SRC_DATA_DIR="/mnt/boot_from"
 
 log_info() {
     echo "[*] $1" >&2
@@ -198,26 +199,34 @@ do_find_boot_part() {
 }
 
 do_backup_boot() {
-    mkdir -p /tmp/backup/boot || true
-    cp -rf /mnt/boot_from/boot/* /tmp/backup/boot || true
+    mkdir -p /dev/shm/backup/boot || true
+    cp -rf /mnt/boot_from/boot/zpod* /dev/shm/backup/boot/ || true
+    #cp -rf /mnt/boot_from/boot/grub /dev/shm/backup/boot/ || true
+
+    log_info "backup $src to /dev/shm/backup/boot"
 
     mountpoint -q "/mnt/boot_from" && (umount /mnt/boot_from || true)
-    ln -s /tmp/backup/boot /mnt/boot_from/boot || true
+    ln -s /dev/shm/backup/boot /mnt/boot_from/boot || true
+    ls -al /dev/shm/backup/boot /mnt/boot_from/ || true
+
+    SRC_DATA_DIR="/dev/shm/backup"
 }
 
 do_backup_src() {
-    src="$1"
-    dst="$2"
+    boot_part="$1"
+    dd_disk="$2"
+
+    log_info "Check $boot_part need backup $dd_disk"
 
     #如果源分区是在目标磁盘, 则需要先将源分区的boot文件 复制出来
-    (echo "$src" | grep "$dst") && (do_backup_boot || true)
+    (echo "$boot_part" | grep -q "$dd_disk") && (do_backup_boot || true)
 }
 
 do_refresh_part() {
     ROOT_DISK="$1"
     
     partprobe "$ROOT_DISK" || true
-    sleep 1
+    sleep 2
 }
 
 do_install_and_reboot() {
@@ -251,15 +260,16 @@ do_install_and_reboot() {
     mount "${BOOT_PART}" /mnt/boot || true
     mount "${ROOT_PART}" /mnt/root || true
 
-    # 复用grub文件
     mkdir -p /mnt/boot/boot/grub || true
-    cp -rf /mnt/boot_from/boot/grub/* /mnt/boot/boot/grub || true
+
+    # 不复用grub文件, 因为 如果是从 disk 安装的, 容易出现 grub 不匹配
+    #cp -rf "$SRC_DATA_DIR/boot/grub/"* /mnt/boot/boot/grub || true
 
     # 复制 vmlinuz 和 initrd, 以及如果存在以zpod开头的文件
-    cp -f /mnt/boot_from/boot/zpod* /mnt/boot/boot || true
+    cp -f "$SRC_DATA_DIR/boot/"zpod* /mnt/boot/boot || true
 
     # 复制一份配置文件, 使其可写
-    cp -f /mnt/boot_from/boot/*.conf /mnt/root/ || true
+    cp -f "$SRC_DATA_DIR/boot/"*.conf /mnt/root/ || true
 
     # 重新获取root分区的uuid, 生成 grub.cfg
     ROOT_UUID=$(blkid | grep "${ROOT_PART}" | awk '{print $3}' | sed 's/UUID=//g' | sed 's/"//g')

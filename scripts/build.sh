@@ -323,14 +323,15 @@ build_disk_img() {
     # Install GRUB for Legacy BIOS (MBR)
     grub-install \
         --target=i386-pc \
+        --modules="ext2 iso9660 xzio" \
         --boot-directory="${mount_dir}/boot" \
         --no-floppy \
         "$LOOP_DEV" || log_error "GRUB BIOS install failed!"
 
-    # 删除不必要的重复文件, 其在外层initrd中还会存在
-    rm -rf "${mount_dir}/boot/grub/x86_64-efi"
-    rm -rf "${mount_dir}/boot/grub/i386-pc"
-    rm -rf "${mount_dir}/boot/grub/fonts"
+    # 删除不必要的重复文件, 其在外层initrd中还会存在. 容易出现bios 和 mod 不匹配的情况, 特别是 硬盘安装的时候
+    #rm -rf "${mount_dir}/boot/grub/x86_64-efi"
+    #rm -rf "${mount_dir}/boot/grub/i386-pc"
+    #rm -rf "${mount_dir}/boot/grub/fonts"
   
     # Unmount everything cleanly
     mountpoint -q "${mount_dir}/boot/efi" && umount "${mount_dir}/boot/efi"
