@@ -44,10 +44,9 @@ boot_install() {
 
     log_info "Booted from ${BOOT_DEVICE} in ${BOOT_MODE} mode. install to ${ROOT_DISK}"
 
-    # 从 disk.img.gz dd 到物理硬盘
+    # 从 disk.img.gz dd 到物理硬盘, 所以可能需要先备份
     do_backup_src "${BOOT_DEVICE}" "${ROOT_DISK}"
 
-    [ -e /mnt/boot_from/boot/disk.img.gz ] && (gunzip -dc /mnt/boot_from/boot/disk.img.gz | dd of="$ROOT_DISK") &&  touch /tmp/ddok
     [ -e /mnt/boot_from/boot/disk.img.xz ] && (unxz   -dc /mnt/boot_from/boot/disk.img.xz | dd of="$ROOT_DISK") &&  touch /tmp/ddok
 
     # 挂载分区, 复制文件等

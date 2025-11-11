@@ -182,7 +182,7 @@ do_find_boot_part() {
                         # 尝试挂载, 并检查文件
                         mount "$partition" /mnt/boot_from >/dev/null 2>&1 || true
 
-                        if [ -e "/mnt/boot_from/boot/disk.img.gz" ] && [ -e "/mnt/boot_from/boot/zpod-vmlinuz" ]; then
+                        if [ -e "/mnt/boot_from/boot/disk.img.xz" ] && [ -e "/mnt/boot_from/boot/zpod-vmlinuz" ]; then
                             BOOT_DEVICE="$partition"
                             BOOT_MODE="disk"
 
@@ -201,6 +201,7 @@ do_find_boot_part() {
 do_backup_boot() {
     mkdir -p /dev/shm/backup/boot || true
     cp -rf /mnt/boot_from/boot/zpod* /dev/shm/backup/boot/ || true
+    cp  -f /mnt/boot_from/boot/disk.img.xz /dev/shm/backup/boot/ || true
     #cp -rf /mnt/boot_from/boot/grub /dev/shm/backup/boot/ || true
 
     log_info "backup $src to /dev/shm/backup/boot"

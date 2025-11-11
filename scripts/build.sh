@@ -70,7 +70,7 @@ PODMAN_PATH="/dev/shm/podman-linux-amd64.tar.gz"
 
 YOUKI_PATH="/dev/shm/youki-musl.tar.gz"
 ALPINE_PATH="/dev/shm/alpine-part-rootfs.tar.gz"
-DISKIMG_PATH="/dev/shm/disk.img.gz"
+DISKIMG_PATH="/dev/shm/disk.img.xz"
 
 # Work directory for all build operations
 WORKDIR="/dev/shm/cache/build_zpod"
@@ -279,7 +279,7 @@ build_disk_img() {
     log_info "Building disk.img template..."
 
     if [  -e "${DISKIMG_PATH}" ]; then
-        cp -f "${DISKIMG_PATH}" "${WORKDIR}/disk.img.gz"
+        cp -f "${DISKIMG_PATH}" "${WORKDIR}/disk.img.xz"
         return
     fi
 
@@ -345,12 +345,12 @@ build_disk_img() {
     rm -rf "$mount_dir"
 
     log_info "Compressing disk.img..."
-    gzip -9 -c "$img_file" > "${DISKIMG_PATH}"
-    cp -f "${DISKIMG_PATH}" "${WORKDIR}/disk.img.gz"
+    xz -9 -c "$img_file" > "${DISKIMG_PATH}"
+    cp -f "${DISKIMG_PATH}" "${WORKDIR}/disk.img.xz"
 
     rm "$img_file"
 
-    log_info "disk.img.gz created in ${WORKDIR} ."
+    log_info "disk.img.xz created in ${WORKDIR} ."
 }
 
 
@@ -381,7 +381,7 @@ EOF
     pushd "${WORKDIR}" > /dev/null
     if [ "$BUILD_TARGET" = "gz" ] ||  [ "$BUILD_TARGET" = "all" ]; then
         log_info "Creating ${OUTPUT_DIR}/zpod${ABI}.tar.gz..."
-        time tar -czf "${OUTPUT_DIR}/zpod${ABI}.tar.gz" zpod-vmlinuz zpod-initrd disk.img.gz
+        time tar -czf "${OUTPUT_DIR}/zpod${ABI}.tar.gz" zpod-vmlinuz zpod-initrd disk.img.xz
     fi
 
     popd > /dev/null
@@ -393,7 +393,7 @@ EOF
         # Prepare ISO contents
         cp "${WORKDIR}/zpod-vmlinuz" "${WORKDIR}/iso/boot/"
         cp "${WORKDIR}/zpod-initrd" "${WORKDIR}/iso/boot/"
-        cp "${WORKDIR}/disk.img.gz" "${WORKDIR}/iso/boot/"
+        cp "${WORKDIR}/disk.img.xz" "${WORKDIR}/iso/boot/"
 
         # Create GRUB config for the ISO
         cat > "${WORKDIR}/iso/boot/grub/grub.cfg" << EOF
