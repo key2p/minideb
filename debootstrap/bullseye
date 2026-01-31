@@ -46,7 +46,7 @@ work_out_debs () {
     # tzdata for handling timezones
     # util-linux for getopt
     # mount is required for mounting /proc during debootstrap, ? e2fsprogs util-linux-extra 
-	required="adduser base-files base-passwd bash bsdutils coreutils curl debian-archive-keyring diffutils dpkg findutils grep gzip hostname init-system-helpers libc-bin login lsb-base mawk ncurses-base passwd sed sysv-rc tar tzdata util-linux mount perl-base"
+	required="adduser base-files base-passwd bash bsdutils coreutils curl debian-archive-keyring debianutils diffutils dpkg findutils grep gzip hostname init-system-helpers libc-bin login lsb-base mawk ncurses-base passwd sed sysv-rc tar tzdata util-linux mount perl-base"
 
 	base="apt"
 
